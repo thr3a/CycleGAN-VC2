@@ -33,6 +33,8 @@ class CycleGANTraining(object):
                  output_B_dir,
                  restart_training_at=None):
 
+        self.device = torch.device('cuda')
+
         # Speech Parameters
         logf0s_normalization = np.load(logf0s_normalization)
         self.log_f0s_mean_A = logf0s_normalization['mean_A']
