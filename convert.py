@@ -32,6 +32,26 @@ class CycleGANTraining(object):
                  validation_B_dir,
                  output_B_dir,
                  restart_training_at=None):
+
+        # Speech Parameters
+        logf0s_normalization = np.load(logf0s_normalization)
+        self.log_f0s_mean_A = logf0s_normalization['mean_A']
+        self.log_f0s_std_A = logf0s_normalization['std_A']
+        self.log_f0s_mean_B = logf0s_normalization['mean_B']
+        self.log_f0s_std_B = logf0s_normalization['std_B']
+
+        mcep_normalization = np.load(mcep_normalization)
+        self.coded_sps_A_mean = mcep_normalization['mean_A']
+        self.coded_sps_A_std = mcep_normalization['std_A']
+        self.coded_sps_B_mean = mcep_normalization['mean_B']
+        self.coded_sps_B_std = mcep_normalization['std_B']
+
+        # Generator and Discriminator
+        self.generator_A2B = Generator().to(self.device)
+        self.generator_B2A = Generator().to(self.device)
+        self.discriminator_A = Discriminator().to(self.device)
+        self.discriminator_B = Discriminator().to(self.device)
+
         self.modelCheckpoint = model_checkpoint
         os.makedirs(self.modelCheckpoint, exist_ok=True)
 
