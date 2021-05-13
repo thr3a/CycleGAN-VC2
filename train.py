@@ -15,8 +15,9 @@ import preprocess
 from trainingDataset import trainingDataset
 from model_tf import Generator, Discriminator
 from tqdm import tqdm
+import soundfile as sf
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 class CycleGANTraining(object):
@@ -133,7 +134,7 @@ class CycleGANTraining(object):
 
             # Preparing Dataset
             n_samples = len(self.dataset_A)
-
+            print(n_samples)
             dataset = trainingDataset(datasetA=self.dataset_A,
                                       datasetB=self.dataset_B,
                                       n_frames=128)
@@ -145,7 +146,7 @@ class CycleGANTraining(object):
             pbar = tqdm(enumerate(train_loader))
             for i, (real_A, real_B) in enumerate(train_loader):
                 num_iterations = (n_samples // self.mini_batch_size) * epoch + i
-                # print("iteration no: ", num_iterations, epoch)
+                print("\niteration no: ", num_iterations, ", epoch: ", epoch, "\n")
 
                 if num_iterations > 10000:
                     identity_loss_lambda = 0
@@ -261,24 +262,30 @@ class CycleGANTraining(object):
                             d_loss.item(), generator_loss_A2B, generator_loss_B2A, identiyLoss, cycleLoss, d_loss_A,
                             d_loss_B))
 
-            #                 if num_iterations % 50 == 0:
-            #                     store_to_file = "Iter:{}\t Generator Loss:{:.4f} Discrimator Loss:{:.4f} \tGA2B:{:.4f} GB2A:{:.4f} G_id:{:.4f} G_cyc:{:.4f} D_A:{:.4f} D_B:{:.4f}".format(
-            #                         num_iterations, generator_loss.item(), d_loss.item(), generator_loss_A2B, generator_loss_B2A,
-            #                         identiyLoss, cycleLoss, d_loss_A, d_loss_B)
-            #                     print(
-            #                         "Iter:{}\t Generator Loss:{:.4f} Discrimator Loss:{:.4f} \tGA2B:{:.4f} GB2A:{:.4f} G_id:{:.4f} G_cyc:{:.4f} D_A:{:.4f} D_B:{:.4f}".format(
-            #                             num_iterations, generator_loss.item(), d_loss.item(), generator_loss_A2B,
-            #                             generator_loss_B2A, identiyLoss, cycleLoss, d_loss_A, d_loss_B))
-            #                     self.store_to_file(store_to_file)
+                if num_iterations % 50 == 0:
+                    store_to_file = "Iter:{}\t Generator Loss:{:.4f} Discrimator Loss:{:.4f} \tGA2B:{:.4f} GB2A:{:.4f} G_id:{:.4f} G_cyc:{:.4f} D_A:{:.4f} D_B:{:.4f}".format(
+                    num_iterations, generator_loss.item(), d_loss.item(), generator_loss_A2B, generator_loss_B2A,
+                        identiyLoss, cycleLoss, d_loss_A, d_loss_B)
+                    print(
+                        "Iter:{}\t Generator Loss:{:.4f} Discrimator Loss:{:.4f} \tGA2B:{:.4f} GB2A:{:.4f} G_id:{:.4f} G_cyc:{:.4f} D_A:{:.4f} D_B:{:.4f}".format(
+                            num_iterations, generator_loss.item(), d_loss.item(), generator_loss_A2B,
+                            generator_loss_B2A, identiyLoss, cycleLoss, d_loss_A, d_loss_B))
+                    self.store_to_file(store_to_file)
 
-            #             end_time = time.time()
-            #             store_to_file = "Epoch: {} Generator Loss: {:.4f} Discriminator Loss: {}, Time: {:.2f}\n\n".format(
-            #                 epoch, generator_loss.item(), d_loss.item(), end_time - start_time_epoch)
-            #             self.store_to_file(store_to_file)
-            #             print("Epoch: {} Generator Loss: {:.4f} Discriminator Loss: {}, Time: {:.2f}\n\n".format(
-            #                 epoch, generator_loss.item(), d_loss.item(), end_time - start_time_epoch))
+                    end_time = time.time()
+                    store_to_file = "Epoch: {} Generator Loss: {:.4f} Discriminator Loss: {}, Time: {:.2f}\n\n".format(
+                        epoch, generator_loss.item(), d_loss.item(), end_time - start_time_epoch)
+                    self.store_to_file(store_to_file)
+                    print("Epoch: {} Generator Loss: {:.4f} Discriminator Loss: {}, Time: {:.2f}\n\n".format(
+                        epoch, generator_loss.item(), d_loss.item(), end_time - start_time_epoch))
+                    print("Saving model Checkpoint  ......")
+                    store_to_file = "Saving model Checkpoint  ......"
+                    self.store_to_file(store_to_file)
+                    self.saveModelCheckPoint(epoch, '{}'.format(
+                    self.modelCheckpoint + '_CycleGAN_CheckPoint'))
+                    print("Model Saved!")
 
-            if epoch % 2000 == 0 and epoch != 0:
+            if epoch % 10 == 0 and epoch != 0:
                 end_time = time.time()
                 store_to_file = "Epoch: {} Generator Loss: {:.4f} Discriminator Loss: {}, Time: {:.2f}\n\n".format(
                     epoch, generator_loss.item(), d_loss.item(), end_time - start_time_epoch)
@@ -294,7 +301,7 @@ class CycleGANTraining(object):
                     self.modelCheckpoint + '_CycleGAN_CheckPoint'))
                 print("Model Saved!")
 
-            if epoch % 2000 == 0 and epoch != 0:
+            if epoch % 10 == 0 and epoch != 0:
                 # Validation Set
                 validation_start_time = time.time()
                 self.validation_for_A_dir()
@@ -355,9 +362,10 @@ class CycleGANTraining(object):
                                                                 ap=ap,
                                                                 fs=sampling_rate,
                                                                 frame_period=frame_period)
-            librosa.output.write_wav(path=os.path.join(output_A_dir, os.path.basename(file)),
-                                     y=wav_transformed,
-                                     sr=sampling_rate)
+            sf.write(os.path.join(output_A_dir, os.path.basename(file)), wav_transformed, sampling_rate, 'PCM_24')
+            #librosa.output.write_wav(path=os.path.join(output_A_dir, os.path.basename(file)),
+            #                         y=wav_transformed,
+            #                         sr=sampling_rate)
 
     def validation_for_B_dir(self):
         num_mcep = 36
@@ -408,9 +416,10 @@ class CycleGANTraining(object):
                                                                 ap=ap,
                                                                 fs=sampling_rate,
                                                                 frame_period=frame_period)
-            librosa.output.write_wav(path=os.path.join(output_B_dir, os.path.basename(file)),
-                                     y=wav_transformed,
-                                     sr=sampling_rate)
+            sf.write(os.path.join(output_B_dir, os.path.basename(file)), wav_transformed, sampling_rate, 'PCM_24')
+            #librosa.output.write_wav(path=os.path.join(output_B_dir, os.path.basename(file)),
+            #                         y=wav_transformed,
+            #                         sr=sampling_rate)
 
     def savePickle(self, variable, fileName):
         with open(fileName, 'wb') as f:
@@ -468,13 +477,13 @@ if __name__ == '__main__':
     coded_sps_B_norm = './cache/coded_sps_B_norm.pickle'
     model_checkpoint = './model_checkpoint/'
     resume_training_at = './model_checkpoint/_CycleGAN_CheckPoint'
-    #     resume_training_at = None
+    # resume_training_at = None
 
-    validation_A_dir_default = './data/S0913/'
-    output_A_dir_default = './converted_sound/S0913'
+    validation_A_dir_default = './data/inputA/'
+    output_A_dir_default = './converted_sound/inputA'
 
-    validation_B_dir_default = './data/gaoxiaosong/'
-    output_B_dir_default = './converted_sound/gaoxiaosong/'
+    validation_B_dir_default = './data/inputB/'
+    output_B_dir_default = './converted_sound/inputB/'
 
     parser.add_argument('--logf0s_normalization', type=str,
                         help="Cached location for log f0s normalized", default=logf0s_normalization_default)
@@ -516,6 +525,8 @@ if __name__ == '__main__':
     if not os.path.exists(logf0s_normalization) or not os.path.exists(mcep_normalization):
         print(
             "Cached files do not exist, please run the program preprocess_training.py first")
+
+    print(torch.cuda.get_device_name())
 
     cycleGAN = CycleGANTraining(logf0s_normalization=logf0s_normalization,
                                 mcep_normalization=mcep_normalization,
